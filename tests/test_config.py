@@ -331,6 +331,26 @@ def test_null_history_path_does_not_flatten(tmp_path):
     assert "history_path" not in flat
 
 
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("~/data/hist.json", str(Path.home() / "data" / "hist.json")),
+        ("$HOME/data/hist.json", str(Path.home() / "data" / "hist.json")),
+        ("/abs/hist.json", "/abs/hist.json"),
+    ],
+)
+def test_history_path_is_expanded(tmp_path, raw, expected):
+    """`~` and env vars are expanded so the path is not cwd-relative (#57).
+
+    Without this, a documented `~/data/...` value creates a literal `~`
+    directory in the current working directory.
+    """
+    defaults = tmp_path / "defaults.yaml"
+    _write_yaml(defaults, {"history": {"history_path": raw}})
+    flat = config_mod.effective_config(config_mod.load_config(defaults_path=defaults))
+    assert flat["history_path"] == expected
+
+
 @pytest.mark.parametrize("bad_value", ["", "   ", 123, 1.5, True, ["a"], {"a": 1}])
 def test_invalid_history_path_raises(tmp_path, bad_value):
     """Empty, whitespace-only, and non-string history.history_path are rejected (#57)."""

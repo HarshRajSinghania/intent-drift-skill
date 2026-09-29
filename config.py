@@ -16,6 +16,7 @@ can honor every setting.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -222,5 +223,8 @@ def effective_config(merged: dict[str, Any]) -> dict[str, Any]:
     }
     history_path = history.get("history_path")
     if history_path:
-        flattened["history_path"] = history_path
+        # Expand `~` and env vars once, here, so both consumers (analyze()'s
+        # write and main()'s --history read) resolve the same absolute path
+        # rather than each treating the value as cwd-relative.
+        flattened["history_path"] = str(Path(os.path.expandvars(history_path)).expanduser())
     return flattened

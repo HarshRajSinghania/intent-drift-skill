@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   raise a clear validation error (#57).
 - A non-mapping `history` section is now rejected with a clear error, including
   falsy values such as `[]`, `0`, `""`, and `false` (#57).
+- `history.history_path` expands `~` and environment variables, so a
+  `~/data/history.json` value no longer creates a literal `~` directory in the
+  current working directory (#57).
 
 
 ## [1.1.0] - 2026-09-24

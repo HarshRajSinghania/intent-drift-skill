@@ -312,6 +312,16 @@ def _isolate_history(monkeypatch, tmp_path):
     return decoy
 
 
+def _merged_config_with_history_path(history_path):
+    """The shape effective_config() consumes, with history_path relocated."""
+    return {
+        "analysis": {"threshold": 75},
+        "export": {"default_format": "text", "file": None, "include_metadata": True},
+        "context_collection": {"auto_enabled": False, "lookback_hours": 24},
+        "history": {"history_path": str(history_path)},
+    }
+
+
 def test_history_flag_reads_configured_history_path(tmp_path, monkeypatch, capsys):
     """--history must read history.history_path from the merged config (#57)."""
     _isolate_history(monkeypatch, tmp_path)
@@ -324,17 +334,11 @@ def test_history_flag_reads_configured_history_path(tmp_path, monkeypatch, capsy
     monkeypatch.setattr(
         analyzer_mod,
         "load_config",
-        lambda: {
-            "analysis": {"threshold": 75},
-            "export": {"default_format": "text", "file": None, "include_metadata": True},
-            "context_collection": {"auto_enabled": False, "lookback_hours": 24},
-            "history": {"history_path": str(relocated)},
-        },
+        lambda: _merged_config_with_history_path(relocated),
     )
-    try:
+    with pytest.raises(SystemExit) as exc:
         analyzer_mod.main()
-    except SystemExit as exc:
-        assert exc.code == 0
+    assert exc.value.code == 0
     out = capsys.readouterr().out
     assert "81.5" in out
     assert "relocated" in out
@@ -348,12 +352,7 @@ def test_analysis_persists_to_configured_history_path(tmp_path, monkeypatch):
     monkeypatch.setattr(
         analyzer_mod,
         "load_config",
-        lambda: {
-            "analysis": {"threshold": 75},
-            "export": {"default_format": "text", "file": None, "include_metadata": True},
-            "context_collection": {"auto_enabled": False, "lookback_hours": 24},
-            "history": {"history_path": str(relocated)},
-        },
+        lambda: _merged_config_with_history_path(relocated),
     )
     base = _base_config()
     monkeypatch.setattr(

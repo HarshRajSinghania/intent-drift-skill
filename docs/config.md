@@ -34,6 +34,8 @@ context_collection:
 history:
   history_path: null         # null → $XDG_DATA_HOME/intent-drift/history.json
                              # (or ~/.local/share/intent-drift/history.json)
+                             # Set to relocate the timeline; `~` and env vars
+                             # are expanded. Must be a non-empty string.
 ```
 
 ## CLI overrides
@@ -44,7 +46,10 @@ history:
 | `--format F` | `export.default_format` | text/markdown/json |
 | `--auto-context` | `context_collection.auto_enabled` | runs `ContextCollector` |
 | `--context "..."` | `execution_context` | manual evidence string |
-| `--history` | reads `history.history_path` | prints the persisted timeline |
+
+`--history` overrides nothing: it reads the timeline from
+`history.history_path` (falling back to the XDG default) and prints it, so
+that key is unaffected by any CLI flag.
 
 ## Per-invocation config
 
