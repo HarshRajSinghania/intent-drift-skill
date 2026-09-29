@@ -331,30 +331,38 @@ def test_null_history_path_does_not_flatten(tmp_path):
     assert "history_path" not in flat
 
 
-def test_empty_history_path_raises(tmp_path):
+@pytest.mark.parametrize("bad_value", ["", "   ", 123, 1.5, True, ["a"], {"a": 1}])
+def test_invalid_history_path_raises(tmp_path, bad_value):
+    """Empty, whitespace-only, and non-string history.history_path are rejected (#57)."""
     defaults = tmp_path / "defaults.yaml"
-    _write_yaml(defaults, {"history": {"history_path": ""}})
-    try:
+    _write_yaml(defaults, {"history": {"history_path": bad_value}})
+    with pytest.raises(ValueError, match="history.history_path"):
         config_mod.load_config(defaults_path=defaults)
-    except ValueError as exc:
-        assert "history.history_path" in str(exc)
-    else:
-        raise AssertionError("expected ValueError for empty history.history_path")
 
 
-def test_non_string_history_path_raises(tmp_path):
+@pytest.mark.parametrize("bad_value", ["a string", 7, ["a"], (1, 2)])
+def test_non_mapping_history_section_raises(tmp_path, bad_value):
+    """A truthy non-mapping history section is rejected with a clear error."""
     defaults = tmp_path / "defaults.yaml"
-    _write_yaml(defaults, {"history": {"history_path": 123}})
-    try:
+    _write_yaml(defaults, {"history": bad_value})
+    with pytest.raises(ValueError, match="history must be a mapping"):
         config_mod.load_config(defaults_path=defaults)
-    except ValueError as exc:
-        assert "history.history_path" in str(exc)
-    else:
-        raise AssertionError("expected ValueError for non-string history.history_path")
+
+
+@pytest.mark.parametrize("falsy_value", [[], 0, "", False])
+def test_falsy_non_mapping_history_section_raises(tmp_path, falsy_value):
+    """Falsy non-mappings must not slip past the mapping check.
+
+    A `merged.get("history") or {}` lookup would coerce every one of these to
+    ``{}`` and silently accept a malformed config (#57).
+    """
+    defaults = tmp_path / "defaults.yaml"
+    _write_yaml(defaults, {"history": falsy_value})
+    with pytest.raises(ValueError, match="history must be a mapping"):
+        config_mod.load_config(defaults_path=defaults)
 
 
 def test_packaged_defaults_include_history_section():
     merged = config_mod.load_config()
     assert "history" in merged
     assert merged["history"]["history_path"] is None
-

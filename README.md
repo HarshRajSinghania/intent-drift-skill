@@ -96,6 +96,14 @@ and seeds the report's `timeline` with the running history, so the
 `--history` / `--compare` views and the timeline sections of the exporters
 reflect the full trend across sessions.
 
+Relocate that file by setting `history.history_path` in `config/user.yaml`;
+both analysis persistence and `--history` follow it:
+
+```yaml
+history:
+  history_path: ~/data/intent-drift-history.json
+```
+
 ## 📊 Analysis Output
 
 ```

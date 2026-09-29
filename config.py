@@ -160,11 +160,14 @@ def _validate(merged: dict[str, Any], source: str) -> None:
             f"{source}: context_collection.lookback_hours must be a number, got {lookback_hours!r}"
         )
 
-    history = merged.get("history") or {}
+    # Use a sentinel-free lookup: `merged.get("history") or {}` would let any
+    # *falsy* non-mapping (`[]`, `0`, `""`, `False`) through the isinstance
+    # check below, silently accepting a malformed config.
+    history = merged.get("history", {})
+    if history is None:
+        history = {}
     if not isinstance(history, dict):
-        raise ValueError(
-            f"{source}: history must be a mapping, got {type(history).__name__}"
-        )
+        raise ValueError(f"{source}: history must be a mapping, got {type(history).__name__}")
     history_path = history.get("history_path")
     if history_path is not None:
         if not isinstance(history_path, str) or not history_path.strip():
@@ -205,7 +208,10 @@ def effective_config(merged: dict[str, Any]) -> dict[str, Any]:
     analysis = merged.get("analysis") or {}
     export = merged.get("export") or {}
     context = merged.get("context_collection") or {}
-    history = merged.get("history") or {}
+    history = merged.get("history")
+    # Be defensive rather than trusting validation ran: a non-mapping here
+    # would raise AttributeError below instead of degrading to the default.
+    history = history if isinstance(history, dict) else {}
     flattened = {
         "threshold": analysis.get("threshold", 75),
         "format": export.get("default_format", "text"),
